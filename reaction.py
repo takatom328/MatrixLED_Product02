@@ -82,19 +82,64 @@ class GrayScott:
         np.clip(V, 0, 1, out=V)
         self.U, self.V = U, V
 
-    def to_rgb(self):
+    def to_rgb(self, palette=None):
         """
-        V の濃度を色に変換して (H, W, 3) uint8 を返す
-        色: 深い青〜シアン〜白（LED映えする配色）
+        V の濃度と輪郭を色に変換して (H, W, 3) uint8 を返す
+
+        palette: 'ocean'(default) / 'aurora' / 'lava' / 'void' / 'gold'
         """
+        if palette is None:
+            palette = getattr(self, 'palette', 'ocean')
+
         v = self.V  # 0.0 〜 1.0
 
-        # 輝度を強調（低い値は切り捨て、高い値を広げる）
-        t = np.clip(v * 3.0, 0.0, 1.0)
+        # 輪郭強調: V の勾配の大きさ（境界線を光らせる）
+        gx = np.roll(v, -1, axis=1) - np.roll(v, 1, axis=1)
+        gy = np.roll(v, -1, axis=0) - np.roll(v, 1, axis=0)
+        edge = np.clip(np.sqrt(gx**2 + gy**2) * 6.0, 0.0, 1.0)
 
-        r = (t ** 2.0 * 80).astype(np.uint8)
-        g = (t ** 1.2 * 200).astype(np.uint8)
-        b = (t ** 0.7 * 255).astype(np.uint8)
+        # 輝度カーブ: 暗部を黒に、ハイライトを鋭く（LED映え）
+        t = np.clip(v * 2.5, 0.0, 1.0) ** 1.4
+
+        if palette == 'ocean':
+            # 深い青〜シアン〜白。輪郭はシアン白で発光
+            r = t ** 2.5 * 60  + edge * 180
+            g = t ** 1.3 * 180 + edge * 240
+            b = t ** 0.8 * 255 + edge * 255
+
+        elif palette == 'aurora':
+            # 紫〜緑〜白。U-V の差で色相をシフト
+            uv = np.clip((self.U - self.V) * 2.0, 0.0, 1.0)
+            r = t ** 2.0 * 120 * (1 - uv) + edge * 200
+            g = t ** 1.0 * 220 * uv        + edge * 200
+            b = t ** 1.5 * 255             + edge * 180
+
+        elif palette == 'lava':
+            # 暗赤〜オレンジ〜黄白。溶岩・有機体感
+            r = t ** 0.7 * 255 + edge * 255
+            g = t ** 2.0 * 160 + edge * 180
+            b = t ** 4.0 * 60  + edge * 80
+
+        elif palette == 'void':
+            # ほぼ黒。輪郭だけが細い光の線として浮かぶ
+            r = edge * 40  + t ** 3.0 * 20
+            g = edge * 160 + t ** 2.5 * 80
+            b = edge * 255 + t ** 2.0 * 180
+
+        elif palette == 'gold':
+            # 金・琥珀・白金。和風・神秘的
+            r = t ** 0.9 * 255 + edge * 255
+            g = t ** 1.4 * 180 + edge * 200
+            b = t ** 3.0 * 40  + edge * 100
+
+        else:
+            r = t * 200
+            g = t * 200
+            b = t * 200
+
+        r = np.clip(r, 0, 255).astype(np.uint8)
+        g = np.clip(g, 0, 255).astype(np.uint8)
+        b = np.clip(b, 0, 255).astype(np.uint8)
 
         return np.stack([r, g, b], axis=2)
 

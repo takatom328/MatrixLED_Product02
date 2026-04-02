@@ -11,12 +11,22 @@ main.py
     2: interference   干渉模様
     3: reaction       反応拡散 Gray-Scott（デフォルト）
 
-  反応拡散プリセット（モード3のみ）:
-    sudo python3 main.py 3 coral    斑点・コーラル
-    sudo python3 main.py 3 maze     迷路状
-    sudo python3 main.py 3 spots    増殖する島
-    sudo python3 main.py 3 waves    うねる縞
-    sudo python3 main.py 3 mitosis  分裂
+  反応拡散（モード3）:
+    sudo python3 main.py 3 [形状プリセット] [カラーパレット]
+
+  形状プリセット:
+    coral    斑点・コーラル（デフォルト）
+    maze     迷路状
+    spots    増殖する島
+    waves    うねる縞
+    mitosis  分裂
+
+  カラーパレット:
+    ocean    深青〜シアン〜白（デフォルト）
+    aurora   紫〜緑〜白
+    lava     暗赤〜オレンジ〜黄白
+    void     黒背景に輪郭光のみ
+    gold     金・琥珀・白金
 """
 
 import sys
@@ -50,14 +60,14 @@ def run_pattern(disp, pattern_fn):
             print(f'  t={t:.1f}s  fps={fps:.1f}', end='\r')
 
 
-def run_reaction(disp, preset='coral'):
+def run_reaction(disp, preset='coral', palette='ocean'):
     gs = GrayScott(width=WIDTH, height=HEIGHT, preset=preset)
-    print(f'Preset: {preset}  (模様が出るまで30秒ほどかかります)')
+    print(f'Preset: {preset}  Palette: {palette}  (模様が出るまで30秒ほどかかります)')
     frame = 0
     t0 = time.time()
     while running:
         gs.step(n=8)
-        rgb = gs.to_rgb()
+        rgb = gs.to_rgb(palette=palette)
         disp.show(rgb)
         frame += 1
         if frame % 30 == 0:
@@ -80,8 +90,9 @@ def main():
         print('Pattern: interference')
         run_pattern(disp, interference)
     elif mode == 3:
-        preset = sys.argv[2] if len(sys.argv) > 2 else 'coral'
-        run_reaction(disp, preset)
+        preset   = sys.argv[2] if len(sys.argv) > 2 else 'coral'
+        palette  = sys.argv[3] if len(sys.argv) > 3 else 'ocean'
+        run_reaction(disp, preset, palette)
     else:
         print(f'Unknown mode: {mode}')
 
