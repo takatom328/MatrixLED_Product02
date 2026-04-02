@@ -28,9 +28,8 @@ def make_options():
     options.chain_length        = 4           # 直列4枚
     options.parallel            = 1
     options.pixel_mapper_config = 'U-mapper'  # 2x2に折り畳む
-    options.gpio_slowdown        = 4
+    options.gpio_slowdown        = 3
     options.disable_hardware_pulsing = True
-    options.panel_type          = 'FM6126A'
     options.brightness          = 80
     return options
 
@@ -44,10 +43,18 @@ class MatrixDisplay:
         """
         rgb_array: shape (GRID_H, GRID_W, 3) uint8
         GRID → WIDTH/HEIGHT へリサイズして表示
+
+        U-mapperは下段のX軸が反転するため、
+        下半分を左右ミラーしてから送ることで物理的に連続した表示になる
         """
         img = Image.fromarray(rgb_array, 'RGB')
         if img.size != (WIDTH, HEIGHT):
             img = img.resize((WIDTH, HEIGHT), Image.NEAREST)
+
+        # 下半分を左右反転してU-mapperのX軸逆転を補正
+        bottom = img.crop((0, HEIGHT // 2, WIDTH, HEIGHT))
+        img.paste(bottom.transpose(Image.FLIP_LEFT_RIGHT), (0, HEIGHT // 2))
+
         self.canvas.SetImage(img)
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
 
