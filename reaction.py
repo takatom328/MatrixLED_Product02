@@ -28,7 +28,7 @@ PRESETS = {
     'mitosis': dict(f=0.028, k=0.053),
 }
 
-DEFAULT_PRESET = 'coral'
+DEFAULT_PRESET = 'maze'
 
 
 class GrayScott:
@@ -41,7 +41,7 @@ class GrayScott:
         self.k  = p['k']
         self.Du = 0.2100   # U の拡散係数
         self.Dv = 0.1050   # V の拡散係数 (Du の半分)
-        self.dt = 1.0      # 時間ステップ
+        self.dt = 0.4      # 時間ステップ
 
         self._init_field()
 
@@ -123,8 +123,8 @@ class GrayScott:
         elif palette == 'void':
             # ほぼ黒。輪郭だけが細い光の線として浮かぶ
             r = edge * 40  + t ** 3.0 * 20
-            g = edge * 160 + t ** 2.5 * 80
-            b = edge * 255 + t ** 2.0 * 180
+            g = edge * 128 + t ** 2.5 * 80
+            b = edge * 20 + t ** 2.0 * 180
 
         elif palette == 'gold':
             # 金・琥珀・白金。和風・神秘的

@@ -16,13 +16,13 @@ def sine_wave(t, grid_w=64, grid_h=64):
     y = np.linspace(0, 2 * math.pi, grid_h)
     xx, yy = np.meshgrid(x, y)
 
-    # 斜め方向に流れる波
-    val = 0.5 + 0.5 * np.sin(xx + yy - t * 2.0)
+    # 真横に流れる波
+    val = 0.5 + 0.5 * np.sin(yy - t * 1.5)
 
     # 青〜シアン系の色
-    r = (val * 30).astype(np.uint8)
-    g = (val * 180).astype(np.uint8)
-    b = (val * 255).astype(np.uint8)
+    r = (val * 16).astype(np.uint8)
+    g = (val * 128).astype(np.uint8)
+    b = (val * 64).astype(np.uint8)
 
     return np.stack([r, g, b], axis=2)
 
@@ -63,12 +63,24 @@ def interference(t, grid_w=64, grid_h=64):
     d1 = np.sqrt((xx - ax) ** 2 + (yy - ay) ** 2)
     d2 = np.sqrt((xx - bx) ** 2 + (yy - by) ** 2)
 
-    val = 0.5 + 0.25 * np.sin(d1 * 0.5 - t * 2.0) \
-              + 0.25 * np.sin(d2 * 0.5 - t * 2.0)
+    val = 0.5 + 0.25 * np.sin(d1 * 0.25 - t * 2.0) \
+              + 0.25 * np.sin(d2 * 0.25 - t * 2.0)
 
-    # 深い青紫〜白
-    r = (val ** 2 * 120).astype(np.uint8)
-    g = (val ** 2 * 60).astype(np.uint8)
-    b = (val * 220).astype(np.uint8)
+    # 白黒ベース + エッジにプリズムカラー
+    gx = np.roll(val, -1, axis=1) - np.roll(val, 1, axis=1)
+    gy = np.roll(val, -1, axis=0) - np.roll(val, 1, axis=0)
+    edge = np.clip(np.sqrt(gx**2 + gy**2) * 8.0, 0.0, 1.0)
+
+    gray = val ** 1.2
+
+    # 波源間の光路差でプリズム分光（自然な薄膜干渉に近い挙動）
+    phase = (d1 - d2) * 0.4 + t * 0.8
+    cr = 0.5 + 0.5 * np.sin(phase)
+    cg = 0.5 + 0.5 * np.sin(phase + 2.094)
+    cb = 0.5 + 0.5 * np.sin(phase + 4.189)
+
+    r = np.clip(gray * 180 + edge * cr * 220, 0, 255).astype(np.uint8)
+    g = np.clip(gray * 180 + edge * cg * 220, 0, 255).astype(np.uint8)
+    b = np.clip(gray * 180 + edge * cb * 220, 0, 255).astype(np.uint8)
 
     return np.stack([r, g, b], axis=2)
